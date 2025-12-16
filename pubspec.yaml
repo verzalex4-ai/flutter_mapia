@@ -1,0 +1,56 @@
+name: map_culture
+description: "A new Flutter project focused on map-based, AI-enhanced tourism information."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' 
+
+# The following defines the version and build number for your application.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0' 
+
+# Dependencies specify other packages that your package needs in order to work.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # ======================================================
+  # DEPENDENCIAS DE MAPA, GEOCODIFICACIÓN E IA 
+  # ======================================================
+  flutter_map: ^6.1.0        # Para mostrar el mapa de OpenStreetMap
+  latlong2: ^0.9.1           # Para manejar coordenadas (LatLng)
+  geocoding: ^3.0.0          # Para convertir nombres de lugares en coordenadas (Nominatim/OSM)
+  google_generative_ai: ^0.3.3 # API de Gemini (información de pubs)
+  http: ^1.2.0               # Para hacer peticiones HTTP a APIs (Nominatim, Wikipedia)
+  url_launcher: ^6.3.1       # Para abrir URLs externas (Wikipedia)
+  shared_preferences: ^2.2.2 # Para guardar favoritos y configuraciones persistentemente
+  geolocator: ^11.0.0        # Para obtener ubicación actual
+  permission_handler: ^11.3.0 # Para pedir permisos de ubicación
+  share_plus: ^7.2.2         # Para compartir lugares
+  flutter_native_splash: ^2.3.10 # Para splash screen
+  connectivity_plus: ^5.0.2  # Para detectar conexión a internet
+  cached_network_image: ^3.3.1 # Para caché de imágenes
+  # ======================================================
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+# ============================================
+# CONFIGURACIÓN DEL ICONO DE LA APP
+# ============================================
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "mi_icono.png"
+  adaptive_icon_background: "#5C6BC0"
+  adaptive_icon_foreground: "mi_icono.png"
