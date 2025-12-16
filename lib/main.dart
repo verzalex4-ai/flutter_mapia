@@ -54,14 +54,14 @@ class _PlaceFinderAppState extends State<PlaceFinderApp> {
   Widget build(BuildContext context) {
     // Mostrar un splash mientras carga la preferencia
     if (_isLoading) {
-      return MaterialApp(
+      return const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           backgroundColor: Colors.indigo,
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 Icon(
                   Icons.map,
                   size: 80,
