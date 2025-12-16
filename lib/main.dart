@@ -20,15 +20,64 @@ class PlaceFinderApp extends StatefulWidget {
 
 class _PlaceFinderAppState extends State<PlaceFinderApp> {
   bool _isDarkMode = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  // Cargar la preferencia del tema al iniciar
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+      _isLoading = false;
+    });
+  }
+
+  // Guardar la preferencia del tema
+  Future<void> _saveThemePreference(bool isDark) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDarkMode', isDark);
+  }
 
   void _toggleTheme() {
     setState(() {
       _isDarkMode = !_isDarkMode;
     });
+    _saveThemePreference(_isDarkMode);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Mostrar un splash mientras carga la preferencia
+    if (_isLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: Colors.indigo,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(
+                  Icons.map,
+                  size: 80,
+                  color: Colors.white,
+                ),
+                SizedBox(height: 20),
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: 'Explorador de Lugares',
       debugShowCheckedModeBanner: false,
@@ -90,7 +139,7 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
   Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final favoritesJson = prefs.getStringList('favorites') ?? [];
-    
+
     setState(() {
       _favorites = favoritesJson.map((json) {
         final map = jsonDecode(json) as Map<String, dynamic>;
@@ -129,7 +178,7 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        
+
         if (data.isEmpty) {
           setState(() {
             _error = 'No se encontraron lugares. Intenta con otro término.';
@@ -167,7 +216,9 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
         try {
           _mapController.move(
             LatLng(place.lat, place.lon),
-            place.type == 'country' ? 5.0 : (place.type == 'city' ? 12.0 : 15.0),
+            place.type == 'country'
+                ? 5.0
+                : (place.type == 'city' ? 12.0 : 15.0),
           );
         } catch (e) {
           developer.log('Error moviendo mapa: $e', name: 'PlaceFinder');
@@ -191,7 +242,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
             setState(() {
               _placeInfo = PlaceInfo(
                 title: place.displayName,
-                extract: 'No se encontró información en Wikipedia para este lugar.',
+                extract:
+                    'No se encontró información en Wikipedia para este lugar.',
                 url: null,
                 location: place.displayName,
               );
@@ -217,7 +269,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
             setState(() {
               _placeInfo = PlaceInfo(
                 title: pageData['title'] ?? place.displayName,
-                extract: pageData['extract'] ?? 'No hay información disponible.',
+                extract:
+                    pageData['extract'] ?? 'No hay información disponible.',
                 url: pageData['fullurl'],
                 location: place.displayName,
               );
@@ -428,7 +481,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.indigo),
                           ),
                         )
                       : const Icon(Icons.search, color: Colors.indigo),
@@ -465,7 +519,9 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _showingFavorites ? Icons.favorite_border : Icons.public,
+                          _showingFavorites
+                              ? Icons.favorite_border
+                              : Icons.public,
                           size: 80,
                           color: isDark ? Colors.grey[700] : Colors.grey[400],
                         ),
@@ -502,14 +558,16 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                 if (_showingFavorites)
                                   Container(
                                     padding: const EdgeInsets.all(16),
-                                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                    margin: const EdgeInsets.fromLTRB(
+                                        16, 16, 16, 8),
                                     decoration: BoxDecoration(
                                       color: Colors.indigo[50],
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.favorite, color: Colors.indigo),
+                                        const Icon(Icons.favorite,
+                                            color: Colors.indigo),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
@@ -522,7 +580,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.close, color: Colors.indigo),
+                                          icon: const Icon(Icons.close,
+                                              color: Colors.indigo),
                                           onPressed: () {
                                             setState(() {
                                               _showingFavorites = false;
@@ -542,23 +601,35 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                     itemCount: _places.length,
                                     itemBuilder: (context, index) {
                                       final place = _places[index];
-                                      final isSelected = _selectedPlace?.placeId == place.placeId;
+                                      final isSelected =
+                                          _selectedPlace?.placeId ==
+                                              place.placeId;
                                       final isFav = _isFavorite(place);
                                       return Card(
-                                        margin: const EdgeInsets.only(bottom: 12),
+                                        margin:
+                                            const EdgeInsets.only(bottom: 12),
                                         color: isSelected
-                                            ? (isDark ? Colors.indigo[900] : Colors.indigo[50])
-                                            : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
+                                            ? (isDark
+                                                ? Colors.indigo[900]
+                                                : Colors.indigo[50])
+                                            : (isDark
+                                                ? const Color(0xFF1E1E1E)
+                                                : Colors.white),
                                         elevation: isSelected ? 4 : 1,
                                         child: ListTile(
                                           leading: CircleAvatar(
-                                            backgroundColor: isSelected ? Colors.indigo : Colors.grey[400],
-                                            child: const Icon(Icons.place, color: Colors.white),
+                                            backgroundColor: isSelected
+                                                ? Colors.indigo
+                                                : Colors.grey[400],
+                                            child: const Icon(Icons.place,
+                                                color: Colors.white),
                                           ),
                                           title: Text(
                                             place.name,
                                             style: TextStyle(
-                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
                                             ),
                                           ),
                                           subtitle: Text(
@@ -571,18 +642,29 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                             children: [
                                               IconButton(
                                                 icon: Icon(
-                                                  isFav ? Icons.favorite : Icons.favorite_border,
-                                                  color: isFav ? Colors.red : Colors.grey,
+                                                  isFav
+                                                      ? Icons.favorite
+                                                      : Icons.favorite_border,
+                                                  color: isFav
+                                                      ? Colors.red
+                                                      : Colors.grey,
                                                   size: 20,
                                                 ),
-                                                onPressed: () => _toggleFavorite(place),
-                                                tooltip: isFav ? 'Quitar de favoritos' : 'Agregar a favoritos',
+                                                onPressed: () =>
+                                                    _toggleFavorite(place),
+                                                tooltip: isFav
+                                                    ? 'Quitar de favoritos'
+                                                    : 'Agregar a favoritos',
                                               ),
-                                              const Icon(Icons.arrow_forward_ios, size: 16),
+                                              const Icon(
+                                                  Icons.arrow_forward_ios,
+                                                  size: 16),
                                             ],
                                           ),
                                           onTap: () {
-                                            developer.log('Lugar seleccionado: ${place.name}', name: 'PlaceFinder');
+                                            developer.log(
+                                                'Lugar seleccionado: ${place.name}',
+                                                name: 'PlaceFinder');
                                             _getPlaceInfo(place);
                                           },
                                         ),
@@ -605,7 +687,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.1),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           ),
@@ -620,13 +703,17 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                   Expanded(
                                     flex: 2,
                                     child: Container(
-                                      margin: const EdgeInsets.only(top: 16, bottom: 16, right: 16),
+                                      margin: const EdgeInsets.only(
+                                          top: 16, bottom: 16, right: 16),
                                       decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                        color: isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white,
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.1),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           ),
@@ -635,30 +722,42 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                       child: _isLoadingInfo
                                           ? const Center(
                                               child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
                                                 children: [
                                                   CircularProgressIndicator(),
                                                   SizedBox(height: 16),
-                                                  Text('Obteniendo información...'),
+                                                  Text(
+                                                      'Obteniendo información...'),
                                                 ],
                                               ),
                                             )
                                           : _placeInfo != null
                                               ? SingleChildScrollView(
-                                                  padding: const EdgeInsets.all(20),
+                                                  padding:
+                                                      const EdgeInsets.all(20),
                                                   child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Row(
                                                         children: [
-                                                          const Icon(Icons.book, color: Colors.indigo, size: 28),
-                                                          const SizedBox(width: 12),
+                                                          const Icon(Icons.book,
+                                                              color:
+                                                                  Colors.indigo,
+                                                              size: 28),
+                                                          const SizedBox(
+                                                              width: 12),
                                                           Expanded(
                                                             child: Text(
                                                               _placeInfo!.title,
-                                                              style: const TextStyle(
+                                                              style:
+                                                                  const TextStyle(
                                                                 fontSize: 22,
-                                                                fontWeight: FontWeight.bold,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
                                                               ),
                                                             ),
                                                           ),
@@ -667,19 +766,27 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                                       const Divider(height: 24),
                                                       const Row(
                                                         children: [
-                                                          Icon(Icons.history_edu, color: Colors.indigo, size: 20),
+                                                          Icon(
+                                                              Icons.history_edu,
+                                                              color:
+                                                                  Colors.indigo,
+                                                              size: 20),
                                                           SizedBox(width: 8),
                                                           Text(
                                                             'Historia y Cultura',
                                                             style: TextStyle(
                                                               fontSize: 16,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Colors.indigo,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  Colors.indigo,
                                                             ),
                                                           ),
                                                         ],
                                                       ),
-                                                      const SizedBox(height: 12),
+                                                      const SizedBox(
+                                                          height: 12),
                                                       Text(
                                                         _placeInfo!.extract,
                                                         style: const TextStyle(
@@ -687,83 +794,143 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                                           height: 1.6,
                                                         ),
                                                       ),
-                                                      const SizedBox(height: 20),
-                                                      if (_placeInfo!.url != null)
+                                                      const SizedBox(
+                                                          height: 20),
+                                                      if (_placeInfo!.url !=
+                                                          null)
                                                         ElevatedButton.icon(
                                                           onPressed: () async {
                                                             try {
-                                                              final url = Uri.parse(_placeInfo!.url!);
-                                                              final canLaunch = await canLaunchUrl(url);
+                                                              final url =
+                                                                  Uri.parse(
+                                                                      _placeInfo!
+                                                                          .url!);
+                                                              final canLaunch =
+                                                                  await canLaunchUrl(
+                                                                      url);
                                                               if (canLaunch) {
-                                                                await launchUrl(url);
+                                                                await launchUrl(
+                                                                    url);
                                                               } else {
-                                                                if (!context.mounted) {
+                                                                if (!context
+                                                                    .mounted) {
                                                                   return;
                                                                 }
-                                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
                                                                   const SnackBar(
-                                                                    content: Text('No se pudo abrir el navegador'),
-                                                                    backgroundColor: Colors.red,
+                                                                    content: Text(
+                                                                        'No se pudo abrir el navegador'),
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .red,
                                                                   ),
                                                                 );
                                                               }
                                                             } catch (e) {
-                                                              developer.log('Error al abrir URL: $e', name: 'PlaceFinder');
-                                                              if (!context.mounted) {
+                                                              developer.log(
+                                                                  'Error al abrir URL: $e',
+                                                                  name:
+                                                                      'PlaceFinder');
+                                                              if (!context
+                                                                  .mounted) {
                                                                 return;
                                                               }
-                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .showSnackBar(
                                                                 SnackBar(
-                                                                  content: Text('Error: ${e.toString()}'),
-                                                                  backgroundColor: Colors.red,
+                                                                  content: Text(
+                                                                      'Error: ${e.toString()}'),
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .red,
                                                                 ),
                                                               );
                                                             }
                                                           },
-                                                          icon: const Icon(Icons.open_in_new),
-                                                          label: const Text('Ver artículo completo'),
-                                                          style: ElevatedButton.styleFrom(
-                                                            backgroundColor: Colors.indigo,
-                                                            foregroundColor: Colors.white,
-                                                            padding: const EdgeInsets.symmetric(
+                                                          icon: const Icon(Icons
+                                                              .open_in_new),
+                                                          label: const Text(
+                                                              'Ver artículo completo'),
+                                                          style: ElevatedButton
+                                                              .styleFrom(
+                                                            backgroundColor:
+                                                                Colors.indigo,
+                                                            foregroundColor:
+                                                                Colors.white,
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
                                                               horizontal: 20,
                                                               vertical: 12,
                                                             ),
                                                           ),
                                                         ),
-                                                      const SizedBox(height: 20),
+                                                      const SizedBox(
+                                                          height: 20),
                                                       Container(
-                                                        padding: const EdgeInsets.all(16),
-                                                        decoration: BoxDecoration(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(16),
+                                                        decoration:
+                                                            BoxDecoration(
                                                           color: isDark
-                                                              ? Colors.indigo[900]?.withValues(alpha: 0.3)
-                                                              : Colors.indigo[50],
-                                                          borderRadius: BorderRadius.circular(8),
+                                                              ? Colors
+                                                                  .indigo[900]
+                                                                  ?.withValues(
+                                                                      alpha:
+                                                                          0.3)
+                                                              : Colors
+                                                                  .indigo[50],
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
                                                         ),
                                                         child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
                                                           children: [
                                                             const Row(
                                                               children: [
-                                                                Icon(Icons.location_on, color: Colors.indigo, size: 20),
-                                                                SizedBox(width: 8),
+                                                                Icon(
+                                                                    Icons
+                                                                        .location_on,
+                                                                    color: Colors
+                                                                        .indigo,
+                                                                    size: 20),
+                                                                SizedBox(
+                                                                    width: 8),
                                                                 Text(
                                                                   'Ubicación',
-                                                                  style: TextStyle(
-                                                                    fontWeight: FontWeight.bold,
-                                                                    fontSize: 16,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        16,
                                                                   ),
                                                                 ),
                                                               ],
                                                             ),
-                                                            const SizedBox(height: 8),
-                                                            Text(_placeInfo!.location),
-                                                            const SizedBox(height: 8),
+                                                            const SizedBox(
+                                                                height: 8),
+                                                            Text(_placeInfo!
+                                                                .location),
+                                                            const SizedBox(
+                                                                height: 8),
                                                             Text(
                                                               'Coordenadas: ${_selectedPlace!.lat.toStringAsFixed(4)}, ${_selectedPlace!.lon.toStringAsFixed(4)}',
                                                               style: TextStyle(
                                                                 fontSize: 13,
-                                                                color: isDark ? Colors.grey[400] : Colors.grey[700],
+                                                                color: isDark
+                                                                    ? Colors.grey[
+                                                                        400]
+                                                                    : Colors.grey[
+                                                                        700],
                                                               ),
                                                             ),
                                                           ],
@@ -773,7 +940,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                                   ),
                                                 )
                                               : const Center(
-                                                  child: Text('Cargando información...'),
+                                                  child: Text(
+                                                      'Cargando información...'),
                                                 ),
                                     ),
                                   ),
@@ -791,22 +959,32 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                               itemCount: _places.length,
                               itemBuilder: (context, index) {
                                 final place = _places[index];
-                                final isSelected = _selectedPlace?.placeId == place.placeId;
+                                final isSelected =
+                                    _selectedPlace?.placeId == place.placeId;
                                 final isFav = _isFavorite(place);
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   color: isSelected
-                                      ? (isDark ? Colors.indigo[900] : Colors.indigo[50])
-                                      : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
+                                      ? (isDark
+                                          ? Colors.indigo[900]
+                                          : Colors.indigo[50])
+                                      : (isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white),
                                   child: ListTile(
                                     leading: CircleAvatar(
-                                      backgroundColor: isSelected ? Colors.indigo : Colors.grey[400],
-                                      child: const Icon(Icons.place, color: Colors.white),
+                                      backgroundColor: isSelected
+                                          ? Colors.indigo
+                                          : Colors.grey[400],
+                                      child: const Icon(Icons.place,
+                                          color: Colors.white),
                                     ),
                                     title: Text(
                                       place.name,
                                       style: TextStyle(
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                       ),
                                     ),
                                     subtitle: Text(
@@ -816,7 +994,9 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                     ),
                                     trailing: IconButton(
                                       icon: Icon(
-                                        isFav ? Icons.favorite : Icons.favorite_border,
+                                        isFav
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
                                         color: isFav ? Colors.red : Colors.grey,
                                         size: 20,
                                       ),
@@ -839,7 +1019,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.1),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           ),
@@ -853,15 +1034,20 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                   ),
                                   if (_placeInfo != null)
                                     Container(
-                                      constraints: const BoxConstraints(maxHeight: 300),
-                                      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                                      constraints:
+                                          const BoxConstraints(maxHeight: 300),
+                                      margin: const EdgeInsets.only(
+                                          left: 16, right: 16, bottom: 16),
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                        color: isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white,
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
+                                            color: Colors.black
+                                                .withValues(alpha: 0.1),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           ),
@@ -869,7 +1055,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                       ),
                                       child: SingleChildScrollView(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               _placeInfo!.title,
@@ -881,7 +1068,8 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                             const SizedBox(height: 8),
                                             Text(
                                               _placeInfo!.extract,
-                                              style: const TextStyle(fontSize: 14),
+                                              style:
+                                                  const TextStyle(fontSize: 14),
                                             ),
                                             const SizedBox(height: 12),
                                             if (_placeInfo!.url != null)
@@ -890,39 +1078,57 @@ class _PlaceFinderScreenState extends State<PlaceFinderScreen> {
                                                 child: ElevatedButton.icon(
                                                   onPressed: () async {
                                                     try {
-                                                      final url = Uri.parse(_placeInfo!.url!);
-                                                      final canLaunch = await canLaunchUrl(url);
+                                                      final url = Uri.parse(
+                                                          _placeInfo!.url!);
+                                                      final canLaunch =
+                                                          await canLaunchUrl(
+                                                              url);
                                                       if (canLaunch) {
                                                         await launchUrl(url);
                                                       } else {
                                                         if (!context.mounted) {
                                                           return;
                                                         }
-                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
                                                           const SnackBar(
-                                                            content: Text('No se pudo abrir el navegador'),
-                                                            backgroundColor: Colors.red,
+                                                            content: Text(
+                                                                'No se pudo abrir el navegador'),
+                                                            backgroundColor:
+                                                                Colors.red,
                                                           ),
                                                         );
                                                       }
                                                     } catch (e) {
-                                                      developer.log('Error al abrir URL: $e', name: 'PlaceFinder');
+                                                      developer.log(
+                                                          'Error al abrir URL: $e',
+                                                          name: 'PlaceFinder');
                                                       if (!context.mounted) {
                                                         return;
                                                       }
-                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                      ScaffoldMessenger.of(
+                                                              context)
+                                                          .showSnackBar(
                                                         SnackBar(
-                                                          content: Text('Error: ${e.toString()}'),
-                                                          backgroundColor: Colors.red,
+                                                          content: Text(
+                                                              'Error: ${e.toString()}'),
+                                                          backgroundColor:
+                                                              Colors.red,
                                                         ),
                                                       );
                                                     }
                                                   },
-                                                  icon: const Icon(Icons.open_in_new),
-                                                  label: const Text('Ver en Wikipedia'),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.indigo,
-                                                    foregroundColor: Colors.white,
+                                                  icon: const Icon(
+                                                      Icons.open_in_new),
+                                                  label: const Text(
+                                                      'Ver en Wikipedia'),
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.indigo,
+                                                    foregroundColor:
+                                                        Colors.white,
                                                   ),
                                                 ),
                                               ),
